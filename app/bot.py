@@ -98,4 +98,5 @@ async def send_product_data(message: Message, state: FSMContext):
 
 
 async def start_bot(app):
+    """ Запуск бота """
     await dp.start_polling(bot)

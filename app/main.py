@@ -26,13 +26,18 @@ async def get_session() -> AsyncSession:
 
 @app.on_event("startup")
 async def startup():
+    """ При запуске """
+    # Создание таблиц для артикулов
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Запуск бота
     asyncio.create_task(start_bot(app))
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
+    """ При завершении """
+    # Остановка бота
     await bot.close()
 
 
@@ -92,6 +97,17 @@ async def create_product(
 @app.get("/api/v1/subscribe/{artikul}", dependencies=[Depends(verify_token)])
 async def subscribe_product(artikul: str):
     """ Подписка на обновление товара """
+
+    # Проверка, существует ли уже задача с данным артикулом
+    job_id = f"update_{artikul}"
+    existing_job = scheduler.get_job(job_id)
+    if existing_job:
+        logger.info(f"Попытка повторной подписки на артикул {artikul}")
+        return responses.JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"message": f"Подписка на артикул {artikul} уже оформлена"}
+        )
+
     scheduler.add_job(
         func=update_product_data,
         trigger='interval',
@@ -100,6 +116,7 @@ async def subscribe_product(artikul: str):
         id=f"update_{artikul}",
         replace_existing=True
     )
+    logger.info(f"Подписка на артикул {artikul} оформлена")
     return {"message": f"Подписка на артикул {artikul} оформлена"}
 
 

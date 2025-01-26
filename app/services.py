@@ -50,6 +50,7 @@ async def update_product_data(artikul: str):
 
 
 async def fetch_product_from_api(artikul: str):
+    """ Проверка существования артикула """
     url = (
         f"https://card.wb.ru/cards/v1/detail?"
         f"appType=1&curr=rub&dest=-1257786&spp=30&nm={artikul}"
