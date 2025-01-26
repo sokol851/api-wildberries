@@ -10,11 +10,14 @@ from app.baerer import verify_token
 from app.bot import bot, start_bot
 from app.db import async_session, engine
 from app.models import Base, Product
-from app.schemas import ProductBase, ProductCreate
+from app.schemas import ProductBase, ProductCreate, JobsBase
 from app.services import update_product_data
 from app.sheduler import scheduler
 
-app = FastAPI()
+app = FastAPI(
+    title='API для взаимодействия с WB',
+    version="1.0.0"
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +46,9 @@ async def on_shutdown():
 
 @app.post("/api/v1/products",
           response_model=ProductBase,
-          dependencies=[Depends(verify_token)])
+          dependencies=[Depends(verify_token)],
+          summary='Добавление артикула',
+          tags=['Работа с товаром'])
 async def create_product(
         product_in: ProductCreate,
         session: AsyncSession = Depends(get_session)):
@@ -94,7 +99,10 @@ async def create_product(
                             detail="Товар не найден")
 
 
-@app.get("/api/v1/subscribe/{artikul}", dependencies=[Depends(verify_token)])
+@app.get("/api/v1/subscribe/{artikul}",
+         dependencies=[Depends(verify_token)],
+         summary='Подписка на артикул',
+         tags=['Работа с товаром'])
 async def subscribe_product(artikul: str):
     """ Подписка на обновление товара """
 
@@ -121,7 +129,10 @@ async def subscribe_product(artikul: str):
 
 
 @app.get("/api/v1/subscribe",
-         dependencies=[Depends(verify_token)])
+         response_model=JobsBase,
+         dependencies=[Depends(verify_token)],
+         summary='Получение списка задач',
+         tags=['Работа с товаром'])
 async def list_jobs():
     """ Список всех подписок в планировщике """
     jobs = scheduler.get_jobs()

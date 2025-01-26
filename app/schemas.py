@@ -16,3 +16,11 @@ class ProductBase(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class JobsBase(BaseModel):
+    """ Базовая схема задачи """
+    jobs: list[dict]
+
+    class Config:
+        from_attributes = True
