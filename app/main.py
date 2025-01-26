@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, responses, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -101,3 +101,21 @@ async def subscribe_product(artikul: str):
         replace_existing=True
     )
     return {"message": f"Подписка на артикул {artikul} оформлена"}
+
+
+@app.get("/api/v1/subscribe",
+         dependencies=[Depends(verify_token)])
+async def list_jobs():
+    """ Список всех подписок в планировщике """
+    jobs = scheduler.get_jobs()
+    jobs_info = [
+        {
+            "id": job.id,
+            "Следующее время обновления": job.next_run_time.isoformat() if
+            job.next_run_time else None,
+            "Интервал": str(job.trigger),
+            "Артикула": job.args
+        }
+        for job in jobs
+    ]
+    return responses.JSONResponse(content={"jobs": jobs_info})
