@@ -1,17 +1,18 @@
-import logging
 import asyncio
+import logging
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.baerer import verify_token
+from app.bot import bot, start_bot
 from app.db import async_session, engine
 from app.models import Base, Product
 from app.schemas import ProductBase, ProductCreate
 from app.services import update_product_data
 from app.sheduler import scheduler
-from app.bot import start_bot, bot
 
 app = FastAPI()
 
@@ -35,7 +36,9 @@ async def on_shutdown():
     await bot.close()
 
 
-@app.post("/api/v1/products", response_model=ProductBase)
+@app.post("/api/v1/products",
+          response_model=ProductBase,
+          dependencies=[Depends(verify_token)])
 async def create_product(
         product_in: ProductCreate,
         session: AsyncSession = Depends(get_session)):
@@ -86,7 +89,7 @@ async def create_product(
                             detail="Товар не найден")
 
 
-@app.get("/api/v1/subscribe/{artikul}")
+@app.get("/api/v1/subscribe/{artikul}", dependencies=[Depends(verify_token)])
 async def subscribe_product(artikul: str):
     """ Подписка на обновление товара """
     scheduler.add_job(

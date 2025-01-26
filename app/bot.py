@@ -1,11 +1,11 @@
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.fsm.context import FSMContext
+from aiogram import Bot, Dispatcher, F
+from aiogram.filters import Command, StateFilter
 from aiogram.filters.state import State, StatesGroup
-from aiogram.filters import Command
-
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
-from sqlalchemy.future import select
+from aiogram.fsm.context import FSMContext
+from aiogram.types import (ContentType, KeyboardButton, Message,
+                           ReplyKeyboardMarkup)
 from decouple import config
+from sqlalchemy.future import select
 
 from app.db import async_session
 from app.models import Product
@@ -20,30 +20,36 @@ dp = Dispatcher()
 
 # Кнопка
 button = KeyboardButton(text="Получить данные по товару")
-markup = ReplyKeyboardMarkup(keyboard=[[button]], resize_keyboard=True)
+markup = ReplyKeyboardMarkup(keyboard=[[button]],
+                             resize_keyboard=True)
 
 
 @dp.message(Command(commands=["start"]))
-async def start(message: types.Message):
+async def start(message: Message):
     """ Приветствие """
     await message.answer(
-        "Добро пожаловать! Нажмите кнопку ниже для получения данных по товару.",
+        "Добро пожаловать! Нажмите кнопку ниже "
+        "для получения данных по товару.",
         reply_markup=markup
     )
 
 
-@dp.message(F.text)
-async def request_artikul(message: types.Message, state: FSMContext):
+@dp.message(F.content_type == ContentType.TEXT, StateFilter(None))
+async def request_artikul(message: Message, state: FSMContext):
     """ Получение артикула """
-    await message.answer("Пожалуйста, введите артикул товара:")
-    await state.set_state(Form.artikul)
+    if message.text != "Получить данные по товару":
+        await message.answer("Выберите действие из меню")
+    else:
+        await state.set_state(Form.artikul)
+        await message.answer("Пожалуйста, введите артикул товара:")
 
 
 @dp.message(Form.artikul)
-async def send_product_data(message: types.Message, state: FSMContext):
-    artikul = message.text
+async def send_product_data(message: Message, state: FSMContext):
+    artikul = message.text.strip()
 
     async with async_session() as session:
+
         result = await session.execute(
             select(Product).where(Product.artikul == artikul)
         )
