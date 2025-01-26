@@ -10,7 +10,7 @@ from app.baerer import verify_token
 from app.bot import bot, start_bot
 from app.db import async_session, engine
 from app.models import Base, Product
-from app.schemas import ProductBase, ProductCreate, JobsBase
+from app.schemas import JobsBase, ProductBase, ProductCreate
 from app.services import update_product_data
 from app.sheduler import scheduler
 
